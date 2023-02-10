@@ -36,7 +36,9 @@ int responsibility_spawnattrs_setdisclaim(posix_spawnattr_t attrs, int disclaim)
 NSString *shimmedFlg = @"--shimmed";
 NSString *munkiPythonPath = @"/usr/local/munki/munki-python";
 
-static NSArray * const allowedCmds = @[
+// Global ObjC literals are only supported on macOS 11 and up.
+// Move to local scope to support older macOS releases.
+NSArray *allowedCmds = @[
     @"appusaged",
     @"app_usage_monitor",
     @"authrestartd",
@@ -48,9 +50,9 @@ static NSArray * const allowedCmds = @[
 
 
 int execPython(NSArray<NSString *> *args) {
-    // check command is allowed
+    // FIXME: This logic is wrong
     NSString *cmd = [args[0] lastPathComponent];
-    if (! [args containsObject:cmd]) {
+    if (! [allowedCmds containsObject:cmd]) {
         printf("Unknown cmd: %s\n", args[0].UTF8String);
         exit(EPERM);
     }
