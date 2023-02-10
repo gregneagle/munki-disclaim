@@ -36,7 +36,7 @@ int responsibility_spawnattrs_setdisclaim(posix_spawnattr_t attrs, int disclaim)
 NSString *shimmedFlg = @"--shimmed";
 NSString *munkiPythonPath = @"/usr/local/munki/munki-python";
 
-NSArray *allowedCmds = @[
+static NSArray * const allowedCmds = @[
     @"appusaged",
     @"app_usage_monitor",
     @"authrestartd",
