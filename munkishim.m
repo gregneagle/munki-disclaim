@@ -34,40 +34,29 @@ int responsibility_spawnattrs_setdisclaim(posix_spawnattr_t attrs, int disclaim)
 
 
 NSString *shimmedFlg = @"--shimmed";
+NSString *munkiBinDir = @"/usr/local/munki";
 NSString *munkiPythonPath = @"/usr/local/munki/munki-python";
 
 // Global ObjC literals are only supported on macOS 11 and up.
 // Move to local scope to support older macOS releases.
 NSArray *allowedCmds = @[
-    @"appusaged",
-    @"app_usage_monitor",
-    @"authrestartd",
-    @"launchapp",
-    @"logouthelper",
     @"managedsoftwareupdate",
     @"supervisor"
 ];
 
 
 int execPython(NSArray<NSString *> *args) {
-    // FIXME: This logic is wrong
     NSString *cmd = [args[0] lastPathComponent];
     if (! [allowedCmds containsObject:cmd]) {
-        printf("Unknown cmd: %s\n", args[0].UTF8String);
-        exit(EPERM);
-    }
-
-    // FIXME: This is the wrong approach
-    NSString *absPath = [NSString stringWithFormat:@"/usr/local/munki/%@", cmd];
-    if (! [args[1] isEqualToString:absPath]) {
-        printf("Unknown path: %s\n", args[0].UTF8String);
+        printf("Unsupported cmd: %s\n", args[0].UTF8String);
         exit(EPERM);
     }
 
     // copy args and replace ".../{cmd} --shimmed" with ".../munki-python .../{cmd}.py"
     NSMutableArray *newArgs = [args mutableCopy];
     [newArgs removeObjectAtIndex:0];
-    [newArgs replaceObjectAtIndex:0 withObject:[NSString stringWithFormat:@"%@.py", args[0]]];
+    [newArgs replaceObjectAtIndex:0 withObject:[
+        NSString stringWithFormat:@"%@/.%@.py", munkiBinDir, cmd]];
 
     char **new_argv = [newArgs getCArray];
     if (execvp(new_argv[0], &new_argv[0]) == -1) {
@@ -83,9 +72,12 @@ int execPython(NSArray<NSString *> *args) {
 
 int execShimmed(NSArray<NSString *> *args, char *const *envp) {
     int err;
+    NSString *cmd = [args[0] lastPathComponent];
     
     // set argv to "--shimmed" + argv
     NSMutableArray *newArgs = [args mutableCopy];
+    [newArgs replaceObjectAtIndex:0 withObject:[
+        NSString stringWithFormat:@"%@/%@", munkiBinDir, cmd]];
     [newArgs insertObject:shimmedFlg atIndex:1];
     char **new_argv = [newArgs getCArray];
     
